@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <title>week5 表單驗證</title>
+</head>
+
+<body>
+  <div id="app" class="container py-4">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">圖片</th>
+          <th scope="col">商品名稱</th>
+          <th scope="col">價格</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <template v-for="item in products" :key="item.id">
+          <tr>
+            <td>
+              <img :src="item.imageUrl" :alt="item.title"
+                style="width: 200px; height: 100px; object-fit: cover; object-position: center center;">
+            </td>
+            <td>{{ item.title }}</td>
+            <td>
+              <del class="h6">原價 {{ item.origin_price }} 元</del>
+              <div class="">現在只要 {{ item.price }} 元</div>
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group" aria-label="Small button group">
+                <button type="button" class="btn btn-outline-secondary" @click.prevent="productDetail(item.id)"
+                  :disabled="loadingStatus.loadingItem === item.id">
+                  <span class="spinner-border spinner-border-sm text-secondary" role="status"
+                    v-if="loadingStatus.loadingItem === item.id">
+                  </span>
+                  查看更多
+                </button>
+                <button type="button" class="btn btn-outline-danger" @click.prevent="addToCart(item.id)"
+                  :disabled="loadingStatus.loadingAddCartItem === item.id">
+                  <span class="spinner-border spinner-border-sm text-danger" role="status"
+                    v-if="loadingStatus.loadingAddCartItem === item.id">
+                  </span>
+                  加到購物車
+                </button>
+              </div>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+    <!-- Modal -->
+    <product-modal ref="productDetail" :product="product" @add-to-cart="addToCart">
+    </product-modal>
+    <button class="btn btn-outline-danger d-block ms-auto my-5" @click.prevent="clearCarts">
+      清空購物車
+    </button>
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col"></th>
+          <th scope="col">品名</th>
+          <th scope="col">數量/單位</th>
+          <th scope="col">單價</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template v-for="item in carts.carts" :key="item.id">
+          <tr class="align-middle">
+            <td>
+              <button class="btn btn-outline-danger" @click.prevent="delCartProduct(item.id)"
+                :disable="loadingStatus.loadingItem === item.id">
+                <span class="spinner-border spinner-border-sm text-danger" role="status"
+                  v-if="loadingStatus.loadingItem === item.id">
+                </span>
+                x
+              </button>
+            </td>
+            <td>{{ item.product.title }}</td>
+            <td>
+              <div class="input-group input-group-sm">
+                <input type="number" class="form-control" min="1" v-model="item.qty" @change="updateCart(item)">
+                <span class="input-group-text" id="basic-addon2">{{ item.product.unit}}</span>
+              </div>
+            </td>
+            <td class="text-end">{{ item.total }}</td>
+          </tr>
+        </template>
+      </tbody>
+      <tfoot>
+        <tr class="text-end">
+          <td colspan="3">總計</td>
+          <td>{{ carts.total}}</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="my-5 row justify-content-center">
+      <v-form ref="hivForm" v-slot="{ errors }" @submit="onsubmit">
+        <div class="mb-3">
+          <label for="email" class="form-label">E-mail</label>
+          <v-field id="email" name="信箱" type="email" class="form-control"
+            :class="{ 'is-invalid': errors['信箱'] }" placeholder="請輸入 Email" rules="email|required"
+            v-model="form.user.email"></v-field>
+          <error-message name="信箱" class="invalid-feedback"></error-message>
+        </div>
+        <div class="mb-3">
+          <label for="name" class="form-label">姓名</label>
+          <v-field id="name" name="姓名" type="text" class="form-control" :class="{ 'is-invalid': errors['姓名'] }"
+            placeholder="請輸入姓名" rules="required" v-model="form.user.name"></v-field>
+          <error-message name="姓名" class="invalid-feedback"></error-message>
+        </div>
+        <div class="mb-3">
+          <label for="tel" class="form-label">電話</label>
+          <v-field id="tel" name="電話" type="tel" class="form-control" :class="{ 'is-invalid': errors['電話'] }"
+            placeholder="請輸入電話" rules="required|min:8|max:10" v-model="form.user.tel"></v-field>
+          <error-message name="電話" class="invalid-feedback"></error-message>
+        </div>
+        <div class="mb-3">
+          <label for="address" class="form-label">地址</label>
+          <v-field id="address" name="地址" type="text" class="form-control" :class="{ 'is-invalid': errors['地址'] }"
+            placeholder="請輸入地址" rules="required" v-model="form.user.address"></v-field>
+          <error-message name="地址" class="invalid-feedback"></error-message>
+        </div>
+        <div class="mb-3">
+          <label for="message" class="form-label">留言</label>
+          <textarea class="form-control" id="message" cols="30" rows="10" v-model="form.message"></textarea>
+        </div>
+        <button type="submit" class="btn btn-danger">送出訂單</button>
+      </v-form>
+    </div>
+  </div>
+
+  <style>
+    img {
+      max-width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.5/axios.min.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- VeeValidation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vee-validate/4.12.4/vee-validate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vee-validate/rules@4.12.4/dist/vee-validate-rules.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vee-validate/i18n@4.12.4/dist/vee-validate-i18n.min.js"></script>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+
+</html>
